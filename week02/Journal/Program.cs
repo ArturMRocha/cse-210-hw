@@ -4,126 +4,181 @@ using System.IO;
 
 class Program
 {
-    // Classe para representar uma entrada do diário
-    public class JournalEntry
-    {
-        public string Prompt { get; set; }
-        public string Response { get; set; }
-        public string Date { get; set; }
-
-        public JournalEntry(string prompt, string response)
-        {
-            Prompt = prompt;
-            Response = response;
-            Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        }
-
-        public override string ToString()
-        {
-            return $"Data: {Date}\nPergunta: {Prompt}\nResposta: {Response}\n";
-        }
-    }
-
-    static List<JournalEntry> journal = new List<JournalEntry>();
-    static string[] prompts = 
-    {
-        "Quem foi a pessoa mais interessante com quem você interagiu hoje?",
-        "Qual foi a melhor parte do seu dia?",
-        "Como você viu a mão de Deus na sua vida hoje?",
-        "Qual foi a emoção mais forte que você sentiu hoje?",
-        "Se você pudesse refazer algo hoje, o que seria?"
-    };
-
     static void Main(string[] args)
     {
+        Journal journal = new Journal();
+        string[] prompts =
+        {
+            "Who was the most interesting person you interacted with today?",
+            "What was the best part of your day?",
+            "How did you see God's hand in your life today?",
+            "What was the strongest emotion you felt today?",
+            "If you could redo something today, what would it be?"
+        };
+
         while (true)
         {
-            Console.WriteLine("\nMenu do Diário:");
-            Console.WriteLine("1. Escrever uma nova entrada");
-            Console.WriteLine("2. Exibir o diário");
-            Console.WriteLine("3. Salvar o diário em um arquivo");
-            Console.WriteLine("4. Carregar o diário de um arquivo");
-            Console.WriteLine("5. Sair");
+            Console.WriteLine("\nJournal Menu:");
+            Console.WriteLine("1. Write a new entry");
+            Console.WriteLine("2. Display the journal");
+            Console.WriteLine("3. Save the journal to a file");
+            Console.WriteLine("4. Load the journal from a file");
+            Console.WriteLine("5. Delete an entry");
+            Console.WriteLine("6. Edit an entry");
+            Console.WriteLine("7. Exit");
 
-            Console.Write("Escolha uma opção: ");
+            Console.Write("Choose an option: ");
             string choice = Console.ReadLine();
 
             switch (choice)
             {
                 case "1":
-                    WriteNewEntry();
+                    WriteNewEntry(journal, prompts);
                     break;
 
                 case "2":
-                    DisplayJournal();
+                    journal.DisplayEntries();
                     break;
 
                 case "3":
-                    SaveJournal();
+                    SaveJournal(journal);
                     break;
 
                 case "4":
-                    LoadJournal();
+                    LoadJournal(journal);
                     break;
 
                 case "5":
+                    DeleteEntry(journal);
+                    break;
+
+                case "6":
+                    EditEntry(journal);
+                    break;
+
+                case "7":
                     return;
 
                 default:
-                    Console.WriteLine("Opção inválida. Tente novamente.");
+                    Console.WriteLine("Invalid option. Please try again.");
                     break;
             }
         }
     }
 
-    static void WriteNewEntry()
+    static void WriteNewEntry(Journal journal, string[] prompts)
     {
         Random random = new Random();
         string prompt = prompts[random.Next(prompts.Length)];
-        Console.WriteLine($"Pergunta: {prompt}");
-        Console.Write("Sua resposta: ");
+        Console.WriteLine($"Prompt: {prompt}");
+        Console.Write("Your response: ");
         string response = Console.ReadLine();
-        journal.Add(new JournalEntry(prompt, response));
+        journal.AddEntry(new JournalEntry(prompt, response));
     }
 
-    static void DisplayJournal()
+    static void SaveJournal(Journal journal)
     {
-        if (journal.Count == 0)
+        Console.Write("Enter the filename to save: ");
+        string filename = Console.ReadLine();
+        journal.SaveToFile(filename);
+    }
+
+    static void LoadJournal(Journal journal)
+    {
+        Console.Write("Enter the filename to load: ");
+        string filename = Console.ReadLine();
+        journal.LoadFromFile(filename);
+    }
+
+    static void DeleteEntry(Journal journal)
+    {
+        Console.Write("Enter the index of the entry to delete: ");
+        if (int.TryParse(Console.ReadLine(), out int index))
         {
-            Console.WriteLine("O diário está vazio.");
+            journal.DeleteEntry(index - 1); // Ajusta para índice base 0
         }
         else
         {
-            foreach (var entry in journal)
+            Console.WriteLine("Invalid input. Please enter a valid number.");
+        }
+    }
+
+    static void EditEntry(Journal journal)
+    {
+        Console.Write("Enter the index of the entry to edit: ");
+        if (int.TryParse(Console.ReadLine(), out int index))
+        {
+            Console.Write("Enter the new response: ");
+            string newResponse = Console.ReadLine();
+            journal.EditEntry(index - 1, newResponse); // Ajusta para índice base 0
+        }
+        else
+        {
+            Console.WriteLine("Invalid input. Please enter a valid number.");
+        }
+    }
+}
+
+public class JournalEntry
+{
+    public string _textPrompt { get; set; }
+    public string _textResponse { get; set; }
+    public string _textDate { get; set; }
+
+    public JournalEntry(string prompt, string response)
+    {
+        _textPrompt = prompt;
+        _textResponse = response;
+        _textDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    public override string ToString()
+    {
+        return $"Date: {_textDate}\nPrompt: {_textPrompt}\nResponse: {_textResponse}\n";
+    }
+}
+
+public class Journal
+{
+    private List<JournalEntry> _entries = new List<JournalEntry>();
+
+    public void AddEntry(JournalEntry entry)
+    {
+        _entries.Add(entry);
+    }
+
+    public void DisplayEntries()
+    {
+        if (_entries.Count == 0)
+        {
+            Console.WriteLine("The journal is empty.");
+        }
+        else
+        {
+            for (int i = 0; i < _entries.Count; i++)
             {
-                Console.WriteLine(entry);
+                Console.WriteLine($"Entry #{i + 1}:\n{_entries[i]}");
             }
         }
     }
 
-    static void SaveJournal()
+    public void SaveToFile(string filename)
     {
-        Console.Write("Digite o nome do arquivo para salvar: ");
-        string filename = Console.ReadLine();
-
         using (StreamWriter writer = new StreamWriter(filename))
         {
-            foreach (var entry in journal)
+            foreach (var entry in _entries)
             {
-                writer.WriteLine($"{entry.Date}|{entry.Prompt}|{entry.Response}");
+                writer.WriteLine($"{entry._textDate}|{entry._textPrompt}|{entry._textResponse}");
             }
         }
-        Console.WriteLine("Diário salvo com sucesso.");
+        Console.WriteLine("Journal saved successfully.");
     }
 
-    static void LoadJournal()
+    public void LoadFromFile(string filename)
     {
-        Console.Write("Digite o nome do arquivo para carregar: ");
-        string filename = Console.ReadLine();
-
         if (File.Exists(filename))
         {
-            journal.Clear();
+            _entries.Clear();
             using (StreamReader reader = new StreamReader(filename))
             {
                 string line;
@@ -132,16 +187,43 @@ class Program
                     var parts = line.Split('|');
                     if (parts.Length == 3)
                     {
-                        var entry = new JournalEntry(parts[1], parts[2]) { Date = parts[0] };
-                        journal.Add(entry);
+                        var entry = new JournalEntry(parts[1], parts[2]) { _textDate = parts[0] };
+                        _entries.Add(entry);
                     }
                 }
             }
-            Console.WriteLine("Diário carregado com sucesso.");
+            Console.WriteLine("Journal loaded successfully.");
         }
         else
         {
-            Console.WriteLine("Arquivo não encontrado.");
+            Console.WriteLine("File not found.");
+        }
+    }
+
+    public void DeleteEntry(int index)
+    {
+        if (index >= 0 && index < _entries.Count)
+        {
+            _entries.RemoveAt(index);
+            Console.WriteLine("Entry deleted successfully.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid entry index.");
+        }
+    }
+
+    public void EditEntry(int index, string newResponse)
+    {
+        if (index >= 0 && index < _entries.Count)
+        {
+            _entries[index]._textResponse = newResponse;
+            _entries[index]._textDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            Console.WriteLine("Entry edited successfully.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid entry index.");
         }
     }
 }
